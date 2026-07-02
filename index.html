@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DFT Master Dashboard</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --panel-alt: #f0f4fa;
+      --text: #17212f;
+      --muted: #4c5a70;
+      --accent: #006d77;
+      --accent-2: #ee9b00;
+      --ok: #2a9d8f;
+      --warn: #e76f51;
+      --border: #d7e0ec;
+      --shadow: rgba(8, 23, 45, 0.12);
+      --gradient: linear-gradient(135deg, #f0f7ff 0%, #f8f5ee 100%);
+    }
+
+    body.dark {
+      --bg: #0d1623;
+      --panel: #101f33;
+      --panel-alt: #14263d;
+      --text: #e9f0fb;
+      --muted: #b5c3d9;
+      --accent: #3cc4b0;
+      --accent-2: #ffb703;
+      --ok: #62d0b8;
+      --warn: #ff8c73;
+      --border: #254062;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --gradient: linear-gradient(135deg, #0d1623 0%, #152840 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-image: radial-gradient(circle at 12% 10%, rgba(0, 109, 119, 0.12) 0, rgba(0, 109, 119, 0) 32%),
+        radial-gradient(circle at 92% 18%, rgba(238, 155, 0, 0.12) 0, rgba(238, 155, 0, 0) 30%),
+        var(--gradient);
+      min-height: 100vh;
+    }
+
+    .hero {
+      padding: 2rem 1rem 1.2rem;
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(8px);
+      background: color-mix(in oklab, var(--bg) 75%, transparent);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .hero-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.55rem;
+    }
+
+    .btn,
+    select,
+    input {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 0.5rem 0.72rem;
+      font-size: 0.88rem;
+    }
+
+    .btn {
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 6px 18px -10px var(--shadow);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .layout {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 1rem;
+    }
+
+    aside {
+      position: sticky;
+      top: 6.7rem;
+      align-self: start;
+      max-height: calc(100vh - 8rem);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 12px 26px -16px var(--shadow);
+      padding: 0.75rem;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.87rem;
+      margin: 0.25rem 0;
+      padding: 0.38rem 0.45rem;
+      border-radius: 8px;
+    }
+
+    .toc a:hover,
+    .toc a.active {
+      background: var(--panel-alt);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    main {
+      display: grid;
+      gap: 1rem;
+    }
+
+    section.card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 1rem;
+      box-shadow: 0 10px 22px -16px var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      animation: rise 0.6s ease forwards;
+    }
+
+    section.card:nth-of-type(2) { animation-delay: 0.06s; }
+    section.card:nth-of-type(3) { animation-delay: 0.11s; }
+    section.card:nth-of-type(4) { animation-delay: 0.16s; }
+    section.card:nth-of-type(5) { animation-delay: 0.22s; }
+
+    @keyframes rise {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.22rem;
+      color: var(--accent);
+    }
+
+    .kpi-grid,
+    .topic-grid,
+    .scenario-grid,
+    .quiz-grid {
+      margin-top: 0.85rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.7rem;
+    }
+
+    .mini,
+    .topic,
+    .scenario,
+    .quiz {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.72rem;
+      background: var(--panel-alt);
+    }
+
+    .mini h3,
+    .topic h3,
+    .scenario h3,
+    .quiz h3 {
+      margin: 0;
+      font-size: 0.96rem;
+    }
+
+    .mini p,
+    .topic p,
+    .scenario p,
+    .quiz p,
+    li,
+    td,
+    th {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+      margin: 0.42rem 0 0;
+    }
+
+    .pill {
+      display: inline-block;
+      margin-right: 0.34rem;
+      margin-top: 0.34rem;
+      padding: 0.2rem 0.46rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 0.74rem;
+      color: var(--text);
+      background: var(--panel);
+    }
+
+    .flow {
+      margin-top: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel-alt) 92%, transparent), var(--panel));
+      padding: 0.8rem;
+      overflow-x: auto;
+    }
+
+    .nodes {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 800px;
+    }
+
+    .node {
+      min-width: 120px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      padding: 0.5rem;
+      text-align: center;
+      box-shadow: 0 8px 16px -14px var(--shadow);
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+
+    .arrow {
+      font-size: 1rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .three-d {
+      margin-top: 0.8rem;
+      perspective: 900px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.9rem;
+    }
+
+    .block {
+      position: relative;
+      height: 125px;
+      transform-style: preserve-3d;
+      transform: rotateX(14deg) rotateY(-20deg);
+      transition: transform 0.4s ease;
+    }
+
+    .block:hover {
+      transform: rotateX(8deg) rotateY(-8deg) translateY(-3px);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0.7rem;
+      font-size: 0.84rem;
+      color: var(--text);
+    }
+
+    .face.side {
+      transform: translateZ(-22px);
+      background: color-mix(in oklab, var(--panel-alt) 80%, #000 4%);
+      opacity: 0.9;
+    }
+
+    .accordion {
+      margin-top: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .acc-item {
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .acc-item:last-child {
+      border-bottom: none;
+    }
+
+    .acc-btn {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      padding: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .acc-content {
+      display: none;
+      padding: 0 0.78rem 0.78rem;
+    }
+
+    .acc-item.open .acc-content {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 0.86rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--text);
+      background: var(--panel-alt);
+    }
+
+    .quiz button {
+      margin-top: 0.45rem;
+      width: 100%;
+    }
+
+    .result {
+      margin-top: 0.45rem;
+      font-weight: 600;
+      color: var(--ok);
+      font-size: 0.85rem;
+      min-height: 1.1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 1060px) {
+      .hero-content {
+        grid-template-columns: 1fr;
+      }
+
+      .control-bar {
+        justify-content: flex-start;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        max-height: unset;
+      }
+
+      .nodes {
+        min-width: 640px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-content">
+      <div>
+        <h1>DFT Master Dashboard: Beginner to Advanced</h1>
+        <p class="subtitle">Comprehensive Design-for-Test learning and reference portal with practical scenarios, visual flows, and readiness checks.</p>
+      </div>
+      <div class="control-bar">
+        <input id="searchInput" type="search" placeholder="Search topics, faults, methods..." aria-label="Search dashboard" />
+        <select id="levelFilter" aria-label="Filter by level">
+          <option value="all">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+        <button id="themeToggle" class="btn">Toggle Theme</button>
+        <button id="expandAll" class="btn">Expand All</button>
+        <button id="collapseAll" class="btn">Collapse All</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <strong>Navigation</strong>
+      <nav class="toc" id="toc">
+        <a href="#overview">1. DFT Landscape</a>
+        <a href="#fundamentals">2. Fundamentals</a>
+        <a href="#faults">3. Fault Models</a>
+        <a href="#scan">4. Scan & Compression</a>
+        <a href="#atpg">5. ATPG & Diagnosis</a>
+        <a href="#memory">6. Memory & Logic BIST</a>
+        <a href="#jtag">7. JTAG & Board Test</a>
+        <a href="#lowpower">8. Low-Power & Clocking DFT</a>
+        <a href="#hierarchical">9. Hierarchical & SoC DFT</a>
+        <a href="#safety">10. Safety, Standards & Security</a>
+        <a href="#economics">11. Test Economics</a>
+        <a href="#scenarios">12. Practical Scenarios</a>
+        <a href="#quiz">13. Knowledge Checks</a>
+        <a href="#roadmap">14. Skill Roadmap</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="overview" class="card searchable" data-level="beginner">
+        <h2>1) Complete DFT Landscape</h2>
+        <div class="kpi-grid">
+          <article class="mini">
+            <h3>Primary Objective</h3>
+            <p>Maximize defect observability and controllability while minimizing area, power, pattern count, and test time.</p>
+            <span class="pill">Coverage</span><span class="pill">Cost</span><span class="pill">Quality</span>
+          </article>
+          <article class="mini">
+            <h3>DFT Life Cycle</h3>
+            <p>Architect -> Insert -> Verify -> Generate patterns -> Diagnose silicon -> Feed back into design/process.</p>
+            <span class="pill">RTL to Silicon</span>
+          </article>
+          <article class="mini">
+            <h3>Core Techniques</h3>
+            <p>Scan, compression, ATPG, MBIST/LBIST, JTAG, IJTAG, OCC, test points, diagnosis, repair, and safety test.</p>
+            <span class="pill">Full Stack</span>
+          </article>
+          <article class="mini">
+            <h3>Tooling Context</h3>
+            <p>Vendor-neutral concepts with Tessent-oriented flow references for practical deployment in industrial projects.</p>
+            <span class="pill">Theory + Practice</span>
+          </article>
+        </div>
+
+        <div class="flow" aria-label="DFT end-to-end flow">
+          <div class="nodes">
+            <div class="node">DFT Planning</div>
+            <div class="arrow">→</div>
+            <div class="node">RTL Constraints</div>
+            <div class="arrow">→</div>
+            <div class="node">DFT Insertion</div>
+            <div class="arrow">→</div>
+            <div class="node">Rule Checking</div>
+            <div class="arrow">→</div>
+            <div class="node">ATPG & Vectors</div>
+            <div class="arrow">→</div>
+            <div class="node">Tester Bring-up</div>
+            <div class="arrow">→</div>
+            <div class="node">Diagnosis & Yield Learning</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="fundamentals" class="card searchable" data-level="beginner">
+        <h2>2) Fundamentals: Observability, Controllability, Testability</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Controllability</h3>
+            <p>Ability to force internal nodes to desired logic states through primary inputs or scan controls.</p>
+          </article>
+          <article class="topic">
+            <h3>Observability</h3>
+            <p>Ability to propagate an internal fault effect to a measurable point: scan output, primary output, or MISR signature.</p>
+          </article>
+          <article class="topic">
+            <h3>Fault Coverage vs Defect Coverage</h3>
+            <p>Fault coverage is model-based; defect coverage reflects physical defects. Both are needed for outgoing quality.</p>
+          </article>
+          <article class="topic">
+            <h3>Alias Risk</h3>
+            <p>In compaction, different failing responses may map to same compressed signature; architecture must keep aliasing acceptable.</p>
+          </article>
+        </div>
+
+        <div class="three-d">
+          <div class="block">
+            <div class="face">DFT Architecture Layer<br/>Scan + Compression + BIST</div>
+            <div class="face side"></div>
+          </div>
+          <div class="block">
+            <div class="face">Implementation Layer<br/>Clocking + Power + Timing</div>
+            <div class="face side"></div>
+          </div>
+          <div class="block">
+            <div class="face">Validation Layer<br/>DRC + ATPG + Silicon Correlation</div>
+            <div class="face side"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="faults" class="card searchable" data-level="intermediate">
+        <h2>3) Fault Models and What They Catch</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Fault Model</th>
+              <th>Use Case</th>
+              <th>Pattern Style</th>
+              <th>Common Gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Stuck-at (SA0/SA1)</td>
+              <td>Base structural quality, logic defects</td>
+              <td>Single-cycle capture</td>
+              <td>Limited delay sensitivity</td>
+            </tr>
+            <tr>
+              <td>Transition (Slow-to-rise/fall)</td>
+              <td>Delay defects, performance paths</td>
+              <td>Launch-capture at speed</td>
+              <td>Clocking constraints may reduce coverage</td>
+            </tr>
+            <tr>
+              <td>Path Delay</td>
+              <td>Critical timing path validation</td>
+              <td>Targeted path tests</td>
+              <td>Path sensitization complexity</td>
+            </tr>
+            <tr>
+              <td>Bridging/Open</td>
+              <td>Physical interconnect defects</td>
+              <td>Cell-aware/layout-aware patterns</td>
+              <td>Requires richer defect modeling</td>
+            </tr>
+            <tr>
+              <td>Small Delay Defect (SDD)</td>
+              <td>Marginal timing/yield fallout</td>
+              <td>Tighter timing stress</td>
+              <td>Tester margin and guardband tradeoff</td>
+            </tr>
+            <tr>
+              <td>X-fault / Unknown impact</td>
+              <td>Power-up unknowns and analog interactions</td>
+              <td>X-tolerant compaction/ATPG constraints</td>
+              <td>Over-masking can hide real defects</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="scan" class="card searchable" data-level="intermediate">
+        <h2>4) Scan Architecture and Compression</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Full Scan vs Partial Scan</h3>
+            <p>Full scan improves ATPG convergence and debug; partial scan may save area/timing but reduces controllability.</p>
+          </article>
+          <article class="topic">
+            <h3>Chain Balancing</h3>
+            <p>Balanced chain lengths minimize shift time and power hotspots on tester.</p>
+          </article>
+          <article class="topic">
+            <h3>EDT/Compression</h3>
+            <p>On-chip decompressor and compactor reduce tester channels and pattern volume while preserving coverage.</p>
+          </article>
+          <article class="topic">
+            <h3>X-Bounding</h3>
+            <p>Control unknown sources and masking to avoid false failures and compactor corruption.</p>
+          </article>
+        </div>
+
+        <div class="flow">
+          <div class="nodes" style="min-width: 920px;">
+            <div class="node">Tester Channels</div>
+            <div class="arrow">→</div>
+            <div class="node">Decompressor</div>
+            <div class="arrow">→</div>
+            <div class="node">Internal Scan Chains</div>
+            <div class="arrow">→</div>
+            <div class="node">Capture at-speed</div>
+            <div class="arrow">→</div>
+            <div class="node">Compactor / MISR</div>
+            <div class="arrow">→</div>
+            <div class="node">Fail Signature</div>
+          </div>
+        </div>
+
+        <div class="accordion">
+          <div class="acc-item">
+            <button class="acc-btn">Practical: Compression Ratio Sizing</button>
+            <div class="acc-content">
+              <p>Set target by balancing tester memory, test time, and diagnosis resolution. Too aggressive compression may increase alias risk or reduce debug visibility.</p>
+            </div>
+          </div>
+          <div class="acc-item">
+            <button class="acc-btn">Practical: Low-Power Shift Control</button>
+            <div class="acc-content">
+              <p>Use shift power constraints, weighted fill, and chain staggering to avoid IR-drop-induced overkill fails.</p>
+            </div>
+          </div>
+          <div class="acc-item">
+            <button class="acc-btn">Practical: Scan Chain Debug</button>
+            <div class="acc-content">
+              <p>Isolate chain break by binary partitioning of scan cells, check lockup latch orientation, and validate mode control sequencing.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="atpg" class="card searchable" data-level="advanced">
+        <h2>5) ATPG, Pattern Quality, and Diagnosis</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Constrained ATPG</h3>
+            <p>Respect clock/reset/test-mode constraints to avoid invalid states while preserving detectability.</p>
+          </article>
+          <article class="topic">
+            <h3>Pattern Compaction</h3>
+            <p>Static and dynamic compaction reduce vector count without degrading target fault detection.</p>
+          </article>
+          <article class="topic">
+            <h3>N-Detect Strategy</h3>
+            <p>Multiple detections per fault improve robustness to unmodeled defects and timing noise.</p>
+          </article>
+          <article class="topic">
+            <h3>Diagnosis Loop</h3>
+            <p>Fail logs -> suspect ranking -> layout correlation -> systematic root cause -> corrective action.</p>
+          </article>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ATPG Quality Knob</th>
+              <th>Impact</th>
+              <th>Tradeoff</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Higher N-detect</td>
+              <td>Better defect sensitivity</td>
+              <td>More patterns/test time</td>
+            </tr>
+            <tr>
+              <td>Tighter timing for transition tests</td>
+              <td>Catches marginal delays</td>
+              <td>Possible overkill if setup not correlated</td>
+            </tr>
+            <tr>
+              <td>Cell-aware patterning</td>
+              <td>Better transistor-level defect capture</td>
+              <td>Higher ATPG complexity</td>
+            </tr>
+            <tr>
+              <td>X-handling aggressiveness</td>
+              <td>Cleaner signatures</td>
+              <td>Potential masking loss if overused</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="memory" class="card searchable" data-level="intermediate">
+        <h2>6) Memory BIST, Logic BIST, and In-System Test</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>MBIST Essentials</h3>
+            <p>March algorithms detect stuck-at, coupling, transition, and neighborhood pattern sensitive faults in SRAMs/ROMs.</p>
+          </article>
+          <article class="topic">
+            <h3>Repair (BIRA/BISR)</h3>
+            <p>Analyze fail maps, allocate spares, and program redundancy to recover yield.</p>
+          </article>
+          <article class="topic">
+            <h3>LBIST Overview</h3>
+            <p>PRPG/MISR-based pseudo-random patterning for logic self-test, often with deterministic top-up patterns.</p>
+          </article>
+          <article class="topic">
+            <h3>Mission-mode Test</h3>
+            <p>Periodic self-test for safety domains with bounded runtime and controlled performance impact.</p>
+          </article>
+        </div>
+
+        <div class="flow">
+          <div class="nodes" style="min-width: 930px;">
+            <div class="node">Memory Instance</div>
+            <div class="arrow">→</div>
+            <div class="node">MBIST Controller</div>
+            <div class="arrow">→</div>
+            <div class="node">March Test Execution</div>
+            <div class="arrow">→</div>
+            <div class="node">Fail Collection</div>
+            <div class="arrow">→</div>
+            <div class="node">Repair Analysis</div>
+            <div class="arrow">→</div>
+            <div class="node">Fuse/Map Programming</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="jtag" class="card searchable" data-level="intermediate">
+        <h2>7) Boundary Scan, IJTAG, and Board-Level Test</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>IEEE 1149.1</h3>
+            <p>Boundary scan enables board interconnect testing and device access without physical probes.</p>
+          </article>
+          <article class="topic">
+            <h3>IEEE 1687 (IJTAG)</h3>
+            <p>Standardized access network for embedded instruments, sensors, and test features inside SoCs.</p>
+          </article>
+          <article class="topic">
+            <h3>TAP Integrity</h3>
+            <p>Correct state transitions and instruction register behavior are mandatory for robust bring-up.</p>
+          </article>
+          <article class="topic">
+            <h3>Use in Production</h3>
+            <p>Board test, firmware debug, field diagnostics, and silicon lifecycle monitoring.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="lowpower" class="card searchable" data-level="advanced">
+        <h2>8) Low-Power, Multi-Clock, and OCC-Centric DFT</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Power-aware ATPG</h3>
+            <p>Constrain peak and average activity in shift and capture to prevent IR-drop false failures.</p>
+          </article>
+          <article class="topic">
+            <h3>Clock Domain Crossings</h3>
+            <p>Handle asynchronous boundaries with proper test clocks, lockup latches, and launch/capture intent.</p>
+          </article>
+          <article class="topic">
+            <h3>On-Chip Clock Control (OCC)</h3>
+            <p>Generates deterministic at-speed pulses for transition/path-delay tests under tester timing limits.</p>
+          </article>
+          <article class="topic">
+            <h3>Power Gating Awareness</h3>
+            <p>Isolated/off domains require explicit test modes, retention handling, and safe observation points.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="hierarchical" class="card searchable" data-level="advanced">
+        <h2>9) Hierarchical DFT and Large SoC Integration</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Core-Level Reuse</h3>
+            <p>Generate and package core test models to preserve intent and accelerate SoC assembly.</p>
+          </article>
+          <article class="topic">
+            <h3>Wrapper Architecture</h3>
+            <p>Core wrappers isolate and control embedded IP during integration and top-level ATPG.</p>
+          </article>
+          <article class="topic">
+            <h3>Pattern Retargeting</h3>
+            <p>Map core patterns into SoC context while preserving constraints and expected signatures.</p>
+          </article>
+          <article class="topic">
+            <h3>Test Access Scheduling</h3>
+            <p>Optimize TAM bandwidth and parallel test to meet test-time and thermal limits.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="safety" class="card searchable" data-level="advanced">
+        <h2>10) Safety, Security, and Compliance-Grade DFT</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Topic</th>
+              <th>Why It Matters</th>
+              <th>Engineering Focus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ISO 26262 / Automotive</td>
+              <td>Diagnostic coverage targets and periodic test requirements</td>
+              <td>Safety mechanism testability and evidence traceability</td>
+            </tr>
+            <tr>
+              <td>In-field Self-Test</td>
+              <td>Detect latent faults during operation life</td>
+              <td>Runtime budget, safe-state strategy, fault reaction</td>
+            </tr>
+            <tr>
+              <td>Security of Test Access</td>
+              <td>Prevent abuse of scan/JTAG in production systems</td>
+              <td>Authentication, lifecycle states, key provisioning</td>
+            </tr>
+            <tr>
+              <td>Standards Documentation</td>
+              <td>Audit and customer confidence</td>
+              <td>Coverage reports, assumptions, residual risk statements</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="economics" class="card searchable" data-level="intermediate">
+        <h2>11) Test Economics and Program Optimization</h2>
+        <div class="topic-grid">
+          <article class="topic">
+            <h3>Core Cost Equation</h3>
+            <p>Cost of Test = Tester Time + Pattern Memory + Multisite Limits + Yield Loss due to escapes/overkill.</p>
+          </article>
+          <article class="topic">
+            <h3>Levers</h3>
+            <p>Compression ratio, pattern count, parallelism, adaptive testing, binning policy, and diagnosis loop speed.</p>
+          </article>
+          <article class="topic">
+            <h3>KPIs</h3>
+            <p>Coverage, DPPM, overkill rate, TTR (test time reduction), yield, and diagnosis turnaround time.</p>
+          </article>
+          <article class="topic">
+            <h3>Exit Criteria</h3>
+            <p>Coverage and quality targets met with controlled risk, bounded cost, and reproducible silicon correlation.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="scenarios" class="card searchable" data-level="advanced">
+        <h2>12) Practical Scenarios: What To Do and Why</h2>
+        <div class="scenario-grid" id="scenarioGrid">
+          <article class="scenario" data-tags="scan drc lockup chain">
+            <h3>Scenario A: Scan Chain Fails During Shift</h3>
+            <p><strong>Symptoms:</strong> Mismatched unload on one chain segment.</p>
+            <p><strong>Approach:</strong> Validate mode controls, isolate chain segment, check lockup latch polarity and domain crossing.</p>
+          </article>
+          <article class="scenario" data-tags="atpg transition occ">
+            <h3>Scenario B: Low Transition Coverage</h3>
+            <p><strong>Symptoms:</strong> Good stuck-at but weak transition/path delay detectability.</p>
+            <p><strong>Approach:</strong> Revisit OCC pulses, launch/capture constraints, and false-path/clock-gating declarations.</p>
+          </article>
+          <article class="scenario" data-tags="compression xbound">
+            <h3>Scenario C: High Unknown (X) Pollution</h3>
+            <p><strong>Symptoms:</strong> Excessive masking and unstable signatures.</p>
+            <p><strong>Approach:</strong> Improve X-source control, add X-bounding, model RAM/analog interfaces correctly.</p>
+          </article>
+          <article class="scenario" data-tags="mbist repair yield">
+            <h3>Scenario D: Memory Yield Drop</h3>
+            <p><strong>Symptoms:</strong> Fail clusters around certain arrays at wafer sort.</p>
+            <p><strong>Approach:</strong> Correlate March fail maps, evaluate spare strategy, and tune repair allocation policy.</p>
+          </article>
+          <article class="scenario" data-tags="jtag board bringup">
+            <h3>Scenario E: Board Bring-up JTAG Instability</h3>
+            <p><strong>Symptoms:</strong> Inconsistent IDCODE or boundary responses.</p>
+            <p><strong>Approach:</strong> Check TAP timing, pull resistors, chain order, and instruction path correctness.</p>
+          </article>
+          <article class="scenario" data-tags="power irdrop overkill">
+            <h3>Scenario F: Tester Overkill Under Peak Activity</h3>
+            <p><strong>Symptoms:</strong> Random fails with poor repeatability.</p>
+            <p><strong>Approach:</strong> Tighten power-aware fill, stagger chain activity, and correlate with power grid hotspots.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="quiz" class="card searchable" data-level="beginner">
+        <h2>13) Quick Knowledge Checks</h2>
+        <div class="quiz-grid">
+          <article class="quiz">
+            <h3>Q1: What does controllability primarily indicate?</h3>
+            <button class="btn" data-answer="a">A) Ability to set internal states</button>
+            <button class="btn" data-answer="b">B) Packaging robustness</button>
+            <button class="btn" data-answer="c">C) Wafer map density</button>
+            <div class="result" data-correct="a"></div>
+          </article>
+          <article class="quiz">
+            <h3>Q2: Why use scan compression?</h3>
+            <button class="btn" data-answer="a">A) Increase IR drop only</button>
+            <button class="btn" data-answer="b">B) Reduce tester channel and data volume</button>
+            <button class="btn" data-answer="c">C) Eliminate all unknowns by default</button>
+            <div class="result" data-correct="b"></div>
+          </article>
+          <article class="quiz">
+            <h3>Q3: Transition fault testing mainly targets:</h3>
+            <button class="btn" data-answer="a">A) Pure static defects only</button>
+            <button class="btn" data-answer="b">B) Delay-related defects</button>
+            <button class="btn" data-answer="c">C) JTAG pin mapping errors</button>
+            <div class="result" data-correct="b"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="roadmap" class="card searchable" data-level="beginner">
+        <h2>14) Learning Roadmap: Beginner to Expert</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Focus</th>
+              <th>Hands-on Goal</th>
+              <th>Success Criteria</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Beginner</td>
+              <td>Scan basics, fault models, observability/controllability</td>
+              <td>Explain a scan chain bring-up flow</td>
+              <td>Can debug simple chain mismatch</td>
+            </tr>
+            <tr>
+              <td>Intermediate</td>
+              <td>Compression, ATPG constraints, MBIST and JTAG</td>
+              <td>Set a full production test strategy for one IP</td>
+              <td>Coverage and pattern count are balanced</td>
+            </tr>
+            <tr>
+              <td>Advanced</td>
+              <td>Hierarchical SoC DFT, low-power test, diagnosis</td>
+              <td>Drive coverage closure and silicon correlation</td>
+              <td>Can trade quality, cost, and schedule with data</td>
+            </tr>
+            <tr>
+              <td>Expert</td>
+              <td>Safety/security/test economics optimization</td>
+              <td>Build scalable enterprise DFT methodology</td>
+              <td>Consistent outgoing quality and test-cost control</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    DFT Master Dashboard | Single-file educational portal for comprehensive DFT coverage and practical engineering decisions.
+  </footer>
+
+  <script>
+    const body = document.body;
+    const themeToggle = document.getElementById("themeToggle");
+    const expandAll = document.getElementById("expandAll");
+    const collapseAll = document.getElementById("collapseAll");
+    const searchInput = document.getElementById("searchInput");
+    const levelFilter = document.getElementById("levelFilter");
+    const searchable = [...document.querySelectorAll(".searchable")];
+    const tocLinks = [...document.querySelectorAll(".toc a")];
+
+    const savedTheme = localStorage.getItem("dft-theme");
+    if (savedTheme === "dark") {
+      body.classList.add("dark");
+    }
+
+    themeToggle.addEventListener("click", () => {
+      body.classList.toggle("dark");
+      localStorage.setItem("dft-theme", body.classList.contains("dark") ? "dark" : "light");
+    });
+
+    function applyFilters() {
+      const q = searchInput.value.trim().toLowerCase();
+      const level = levelFilter.value;
+      searchable.forEach((section) => {
+        const txt = section.innerText.toLowerCase();
+        const matchText = q === "" || txt.includes(q);
+        const matchLevel = level === "all" || section.dataset.level === level;
+        section.classList.toggle("hidden", !(matchText && matchLevel));
+      });
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    levelFilter.addEventListener("change", applyFilters);
+
+    const accItems = [...document.querySelectorAll(".acc-item")];
+    document.querySelectorAll(".acc-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.parentElement.classList.toggle("open");
+      });
+    });
+
+    expandAll.addEventListener("click", () => accItems.forEach((i) => i.classList.add("open")));
+    collapseAll.addEventListener("click", () => accItems.forEach((i) => i.classList.remove("open")));
+
+    document.querySelectorAll(".quiz").forEach((quiz) => {
+      const result = quiz.querySelector(".result");
+      const correct = result.dataset.correct;
+      quiz.querySelectorAll("button[data-answer]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          result.textContent = btn.dataset.answer === correct ? "Correct." : "Not correct. Try again.";
+          result.style.color = btn.dataset.answer === correct ? "var(--ok)" : "var(--warn)";
+        });
+      });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.id;
+        tocLinks.forEach((link) => {
+          link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+        });
+      });
+    }, { rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+
+    searchable.forEach((s) => observer.observe(s));
+
+    const scenarioGrid = document.getElementById("scenarioGrid");
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.trim().toLowerCase();
+      scenarioGrid.querySelectorAll(".scenario").forEach((card) => {
+        const t = card.innerText.toLowerCase();
+        card.classList.toggle("hidden", q !== "" && !t.includes(q));
+      });
+    });
+  </script>
+</body>
+</html>
